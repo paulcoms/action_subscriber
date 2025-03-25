@@ -1,5 +1,5 @@
-require "yaml"
-require "action_subscriber/uri"
+require 'yaml'
+require 'action_subscriber/uri'
 
 module ActionSubscriber
   class Configuration
@@ -29,31 +29,31 @@ module ActionSubscriber
                   :virtual_host
 
     CONFIGURATION_MUTEX = ::Mutex.new
-    NETWORK_RECOVERY_INTERVAL = 1.freeze
+    NETWORK_RECOVERY_INTERVAL = 1
 
     DEFAULTS = {
-      :allow_low_priority_methods => false,
-      :connection_reaping_interval => 6,
-      :connection_reaping_timeout_interval => 5,
-      :default_exchange => 'events',
-      :heartbeat => 5,
-      :host => 'localhost',
-      :hosts => [],
-      :network_recovery_interval => NETWORK_RECOVERY_INTERVAL,
-      :password => "guest",
-      :port => 5672,
-      :prefetch => 2,
-      :resubscribe_on_consumer_cancellation => true,
-      :seconds_to_wait_for_graceful_shutdown => 30,
-      :threadpool_size => 8,
-      :timeout => 1,
-      :tls => false,
-      :tls_ca_certificates => [],
-      :tls_cert => nil,
-      :tls_key => nil,
-      :username => "guest",
-      :verify_peer => true,
-      :virtual_host => "/"
+      allow_low_priority_methods: false,
+      connection_reaping_interval: 6,
+      connection_reaping_timeout_interval: 5,
+      default_exchange: 'events',
+      heartbeat: 5,
+      host: 'localhost',
+      hosts: [],
+      network_recovery_interval: NETWORK_RECOVERY_INTERVAL,
+      password: 'guest',
+      port: 5672,
+      prefetch: 2,
+      resubscribe_on_consumer_cancellation: true,
+      seconds_to_wait_for_graceful_shutdown: 30,
+      threadpool_size: 8,
+      timeout: 1,
+      tls: false,
+      tls_ca_certificates: [],
+      tls_cert: nil,
+      tls_key: nil,
+      username: 'guest',
+      verify_peer: true,
+      virtual_host: '/'
     }
 
     ##
@@ -63,18 +63,18 @@ module ActionSubscriber
       CONFIGURATION_MUTEX.synchronize do
         @configure_from_yaml_and_cli = nil if reload
         @configure_from_yaml_and_cli ||= begin
-          env = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || ENV["APP_ENV"] || "development"
+          env = ENV['RAILS_ENV'] || ENV['RACK_ENV'] || ENV['APP_ENV'] || 'development'
 
           yaml_config = {}
-          absolute_config_path = ::File.expand_path(::File.join("config", "action_subscriber.yml"))
-          if ::File.exists?(absolute_config_path)
+          absolute_config_path = ::File.expand_path(::File.join('config', 'action_subscriber.yml'))
+          if ::File.exist?(absolute_config_path)
             erb_yaml = ::ERB.new(::File.read(absolute_config_path)).result
             # Defined in Psych 3.2+ and the new canonical way to load trusted documents:
             # https://github.com/ruby/psych/issues/533#issuecomment-1019363688
             yaml_config = ::YAML.respond_to?(:unsafe_load) ? ::YAML.unsafe_load(erb_yaml)[env] : ::YAML.load(erb_yaml)[env]
           end
 
-          ::ActionSubscriber::Configuration::DEFAULTS.each_pair do |key, value|
+          ::ActionSubscriber::Configuration::DEFAULTS.each_pair do |key, _value|
             exists, setting = fetch_config_value(key, cli_options, yaml_config)
             ::ActionSubscriber.config.__send__("#{key}=", setting) if exists
           end
@@ -89,6 +89,7 @@ module ActionSubscriber
       return [true, cli_options[key.to_s]] if cli_options.key?(key.to_s)
       return [true, yaml_config[key]] if yaml_config.key?(key)
       return [true, yaml_config[key.to_s]] if yaml_config.key?(key.to_s)
+
       [false, nil]
     end
     private_class_method :fetch_config_value
@@ -98,11 +99,11 @@ module ActionSubscriber
     #
     def initialize
       self.decoder = {
-        'application/json' => lambda { |payload| JSON.parse(payload) },
-        'text/plain' => lambda { |payload| payload.dup }
+        'application/json' => ->(payload) { JSON.parse(payload) },
+        'text/plain' => ->(payload) { payload.dup }
       }
 
-      self.error_handler = lambda do |error, env_hash|
+      self.error_handler = lambda do |error, _env_hash|
         logger = ::ActionSubscriber::Logging.logger
 
         logger.error(error.message)
@@ -111,7 +112,7 @@ module ActionSubscriber
       end
 
       DEFAULTS.each_pair do |key, value|
-        self.__send__("#{key}=", value)
+        __send__("#{key}=", value)
       end
     end
 
@@ -137,7 +138,8 @@ module ActionSubscriber
 
     def hosts
       return @hosts if @hosts.size > 0
-      [ host ]
+
+      [host]
     end
 
     def middleware
@@ -145,7 +147,7 @@ module ActionSubscriber
     end
 
     def inspect
-      inspection_string  = <<-INSPECT.strip_heredoc
+      inspection_string = <<-INSPECT.strip_heredoc
         Rabbit Hosts: #{hosts}
         Rabbit Port: #{port}
         Threadpool Size: #{threadpool_size}
@@ -153,7 +155,7 @@ module ActionSubscriber
         Decoders:
       INSPECT
       decoder.each_key { |key| inspection_string << "  --#{key}\n" }
-      return inspection_string
+      inspection_string
     end
   end
 end
